@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Amazon SEO Audit Tool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#05080f;--surf:#0c1220;--surf2:#111827;--bdr:#1f2d45;--bdr2:#263548;
+  --text:#e8edf5;--muted:#5a7090;--hint:#243045;
+  --amber:#f5a623;--alo:rgba(245,166,35,.10);--amid:rgba(245,166,35,.20);
+  --green:#22c55e;--glo:rgba(34,197,94,.12);
+  --red:#ef4444;--rlo:rgba(239,68,68,.12);
+  --r:10px;--rsm:7px;
+}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;min-height:100vh;font-size:14px;line-height:1.5}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:9px}
+h1{font-size:21px;font-weight:600;letter-spacing:-.4px}
+h2{font-size:15px;font-weight:600}
+.pg{max-width:1040px;margin:0 auto;padding:44px 22px}
+.pgsm{max-width:620px;margin:0 auto;padding:44px 22px}
+.card{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r)}
+.sh{display:flex;align-items:center;gap:10px;padding:17px 22px;border-bottom:1px solid var(--bdr)}
+.sb{padding:20px 22px}
+.sn{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--bdr2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--muted);flex-shrink:0}
+.sl{font-size:14px;font-weight:600}
+.fld{display:flex;flex-direction:column;gap:7px}
+.lbl{font-size:12px;font-weight:500;color:var(--muted)}
+.inp{background:var(--bg);border:1px solid var(--bdr);border-radius:var(--rsm);padding:10px 14px;color:var(--text);font-size:14px;font-family:inherit;outline:none;transition:border-color .15s,box-shadow .15s;width:100%}
+.inp:focus{border-color:var(--amber);box-shadow:0 0 0 3px var(--alo)}
+.inp::placeholder{color:var(--hint)}
+.mono{font-family:'JetBrains Mono',monospace;letter-spacing:.5px;font-size:13px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fzg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fz{display:flex;align-items:center;gap:11px;padding:13px 15px;border:1.5px dashed var(--bdr2);border-radius:var(--rsm);cursor:pointer;transition:all .15s;background:var(--surf2)}
+.fz:hover{border-color:var(--muted)}.fz.on{border-color:var(--amber);background:var(--alo)}
+.fzic{width:34px;height:34px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px;background:var(--hint)}
+.fz.on .fzic{background:var(--amid)}
+.fznm{font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px}.fz.on .fznm{color:var(--amber)}
+.fzhi{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:170px}
+.btnr{width:100%;padding:13px 20px;border:none;border-radius:var(--rsm);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;background:var(--amber);color:#05080f;transition:opacity .15s}
+.btnr:not(:disabled):hover{opacity:.87}.btnr:disabled{background:var(--hint);color:var(--muted);cursor:not-allowed}
+.btng{padding:6px 14px;border:1px solid var(--bdr2);border-radius:var(--rsm);font-size:12px;font-weight:500;font-family:inherit;cursor:pointer;background:transparent;color:var(--muted);transition:all .15s}
+.btng:hover{border-color:var(--muted);color:var(--text)}
+.btncp{padding:3px 9px;border:1px solid var(--bdr);border-radius:5px;font-size:11px;font-family:inherit;cursor:pointer;background:transparent;color:var(--muted);transition:all .15s;flex-shrink:0}
+.btncp:hover{border-color:var(--muted);color:var(--text)}.btncp.ok{color:var(--green);border-color:var(--green)}
+.btnca{padding:9px 22px;border:none;border-radius:var(--rsm);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;background:var(--amber);color:#05080f}
+.pl{display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:600;white-space:nowrap}
+.pa{background:var(--alo);color:var(--amber);border:1px solid rgba(245,166,35,.22)}
+.pgrn{background:var(--glo);color:var(--green);border:1px solid rgba(34,197,94,.2)}
+.pr{background:var(--rlo);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.pm{background:rgba(90,112,144,.1);color:var(--muted);border:1px solid var(--bdr)}
+.mr{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.mc{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--rsm);padding:13px 16px}
+.ml{font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:500}
+.mv{font-size:20px;font-weight:600;color:var(--text)}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{padding:9px 14px;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;border-bottom:1px solid var(--bdr);white-space:nowrap;text-align:left}
+th.r,td.r{text-align:right}
+td{padding:9px 14px;border-bottom:1px solid rgba(31,45,69,.4);white-space:nowrap;color:var(--text)}
+tr:last-child td{border-bottom:none}tr:hover td{background:rgba(255,255,255,.015)}
+.pnls{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.pnl{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);padding:20px}
+.pnla{border-color:rgba(245,166,35,.32)}
+.lb{background:var(--bg);border-radius:7px;padding:11px 14px;font-size:12.5px;color:#8898a8;line-height:1.65}
+.lba{background:rgba(245,166,35,.05);border:1px solid rgba(245,166,35,.14);border-radius:7px;padding:11px 14px;font-size:12.5px;color:#bfcad8;line-height:1.65}
+.bl{border-radius:7px;padding:8px 11px;margin-bottom:6px}
+.blc{background:var(--bg)}.bla{background:rgba(245,166,35,.04);border:1px solid rgba(245,166,35,.11)}
+.bn{font-size:10px;font-weight:700;color:var(--muted);flex-shrink:0;min-width:16px;margin-top:2px}
+.bna{color:#b07815}.bt{font-size:12px;color:var(--muted);line-height:1.6;flex:1}
+.bta{font-size:12px;color:#bac5d3;line-height:1.6;flex:1}
+.strat{background:rgba(245,166,35,.07);border:1px solid rgba(245,166,35,.17);border-radius:8px;padding:12px 14px;margin-bottom:16px}
+.stl{font-size:10px;font-weight:700;color:#a06010;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+.stt{font-size:12px;color:#b07820;line-height:1.55}
+.cok{font-size:11px;color:var(--muted)}.cov{font-size:11px;color:var(--red);font-weight:600}
+.anote{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5}
+.anote a{color:var(--amber);text-decoration:none}
+.spg{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px}
+.sp{width:42px;height:42px;border:3px solid var(--bdr2);border-top-color:var(--amber);border-radius:50%;animation:sp .75s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.dots{display:flex;gap:6px;margin-top:4px}.dot{width:6px;height:6px;border-radius:50%;background:var(--bdr2);transition:background .3s}.dot.on{background:var(--amber)}
+.err{background:var(--rlo);border:1px solid rgba(239,68,68,.28);border-radius:var(--rsm);padding:13px 16px}
+.secb{padding:14px 20px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between}
+.row{display:flex;align-items:center;gap:8px}.rowsb{display:flex;align-items:center;justify-content:space-between}
+.logo{width:30px;height:30px;background:var(--amber);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#05080f;font-weight:700;font-size:14px;flex-shrink:0}
+.bbar{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);padding:15px 20px;display:flex;align-items:center;justify-content:space-between}
+.sub3{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.empty{color:var(--muted);font-size:13px}
+@media(max-width:640px){.g2,.fzg,.mr,.pnls{grid-template-columns:1fr}.pg,.pgsm{padding:24px 14px}}
+</style>
+</head>
+<body><div id="root"></div>
+<script>
+let S={phase:'input',brand:'',asin:'',apiKey:'',files:{allProducts:null,asinData:null,cerebro:null,titleBullets:null},step:0,errMsg:'',report:null};
+function set(p){S={...S,...p};draw();}
+
+const readText=f=>new Promise((r,j)=>{const fr=new FileReader();fr.onload=e=>r(e.target.result);fr.onerror=j;fr.readAsText(f);});
+const readBuf=f=>new Promise((r,j)=>{const fr=new FileReader();fr.onload=e=>r(e.target.result);fr.onerror=j;fr.readAsArrayBuffer(f);});
+
+function parseCSV(text){return Papa.parse(text.trim(),{header:true,skipEmptyLines:true,dynamicTyping:false}).data;}
+function parseAllProducts(text){return parseCSV(text);}
+
+// Jungle Scout ASIN-specific: header row 0 has "Export time..." in col 0, "ASIN" in col 2+
+// Data row 1 has the actual values offset by same cols
+function parseAsinSpecific(text){
+  const lines=text.split('\n').filter(l=>l.trim());
+  let hi=-1;
+  for(let i=0;i<Math.min(lines.length,6);i++){
+    if(lines[i].includes('ASIN')&&(lines[i].includes('Product Name')||lines[i].includes('Brand'))){hi=i;break;}
+  }
+  if(hi<0)return null;
+  const rows=Papa.parse(lines.slice(hi).join('\n'),{header:false,skipEmptyLines:false}).data;
+  if(!rows[0]||!rows[1])return null;
+  const hdr=rows[0],dat=rows[1];
+  const offset=hdr.indexOf('ASIN');
+  if(offset<0)return null;
+  const obj={};
+  for(let i=offset;i<hdr.length;i++){if(hdr[i].trim())obj[hdr[i].trim()]=String(dat[i]||'').trim();}
+  return obj;
+}
+
+function parseCerebro(text){return parseCSV(text);}
+
+function parseTitleBullets(buf){
+  const wb=XLSX.read(buf,{type:'array'});
+  return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+}
+
+function extractKeywords(rows,auditAsin,topN=25){
+  if(!rows?.length)return[];
+  const cols=Object.keys(rows[0]);
+  const hasCol=cols.includes(auditAsin.toUpperCase());
+  return rows.map(r=>{
+    const sv=Math.round(parseFloat(r['Search Volume'])||0);
+    // hasCol means ASIN is a competitor column — use it for their rank
+    // Otherwise audit ASIN is the seed — rank is in Position (Rank), 0 = not ranking
+    const rank=hasCol?parseInt(r[auditAsin.toUpperCase()])||0:parseInt(r['Position (Rank)'])||0;
+    const comp=parseFloat(r['Competitor Rank (avg)'])||null;
+    const gap=(rank>0&&comp)?Math.round(rank-comp):null;
+    return{keyword:String(r['Keyword Phrase']||'').trim(),sv,rank:rank||null,comp:comp?Math.round(comp):null,gap,ppc:parseFloat(r['H10 PPC Sugg. Bid'])||null};
+  }).filter(k=>k.sv>=50&&k.keyword).sort((a,b)=>b.sv-a.sv).slice(0,topN);
+}
+
+function findByAsin(rows,asin){return rows?.find(r=>String(r['ASIN']||r['Asin']||'').trim().toUpperCase()===asin.toUpperCase())||null;}
+
+async function callClaude({brand,asin,keywords,curTitle,curBullets,metrics,apiKey}){
+  const kwList=keywords.slice(0,15).map((k,i)=>{
+    const rs=k.rank?`rank #${k.rank}`:'NOT ranking';
+    const cs=k.comp?`, competitors avg #${k.comp}`:'';
+    return`${i+1}. "${k.keyword}" — ${k.sv.toLocaleString()}/mo (${rs}${cs})`;
+  }).join('\n');
+  const bText=curBullets.filter(Boolean).map((b,i)=>`Bullet ${i+1}: ${b}`).join('\n\n');
+  const mStr=metrics?`Price:${metrics['Price']||'?'} | Rating:${metrics['Star Rating']||'?'}★ (${metrics['Reviews']||'?'} reviews) | BSR:${metrics['BSR']||'?'} | Category:${metrics['Category']||'?'}`:'Not available';
+  const prompt=`You are a senior Amazon SEO specialist and conversion copywriter.
+
+BRAND: ${brand}
+AUDIT ASIN: ${asin}
+PRODUCT METRICS: ${mStr}
+
+TOP KEYWORD OPPORTUNITIES (Helium 10 Cerebro, sorted by monthly search volume):
+${kwList}
+
+CURRENT TITLE:
+${curTitle||'(not found — generate from keywords and brand context)'}
+
+CURRENT BULLET POINTS:
+${bText||'(not found — generate from keywords and brand context)'}
+
+YOUR TASK: Write an SEO-optimized Amazon listing first draft.
+
+TITLE RULES:
+- Under 200 characters
+- Lead with the highest-volume keyword shoppers actually search
+- Weave in 2-3 additional high-volume keywords naturally
+- Include brand name, key specs, and a value hook
+- Sentence-case, no ALL CAPS, no pipes
+
+BULLET RULES (5 required, 150-250 chars each):
+- Open each with ALL-CAPS feature hook + em-dash: e.g. "UNIVERSAL FIT -"
+- One strong benefit sentence per bullet embedding a keyword
+- B1: primary use case + top keyword
+- B2: materials / build quality / specs
+- B3: compatibility, sizing, specific numbers
+- B4: competitive advantage over alternatives
+- B5: guarantee / peace-of-mind / brand trust
+
+PRIORITY: Target keywords where the ASIN is NOT ranking or has a large rank gap vs competitors — those are the biggest wins.
+
+Respond ONLY with this exact JSON (no markdown, no extra text):
+{"title":"...","bullets":["...","...","...","...","..."],"reasoning":"2-3 sentences on keyword prioritization and what changed vs current"}`;
+
+  const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.7,maxOutputTokens:1000}})
+  });
+  if(!res.ok){const e=await res.json();throw new Error(e.error?.message||`API error ${res.status}`);}
+  const d=await res.json();
+  const raw=d.candidates?.[0]?.content?.parts?.[0]?.text||'';
+  return JSON.parse(raw.replace(/```json|```/g,'').trim());
+}
+
+async function run(){
+  if(!ready())return;
+  set({phase:'processing',step:0,errMsg:''});
+  try{
+    const[apT,adT,cbT,tbB]=await Promise.all([readText(S.files.allProducts),readText(S.files.asinData),readText(S.files.cerebro),readBuf(S.files.titleBullets)]);
+    const allP=parseAllProducts(apT);
+    const asinSpec=parseAsinSpecific(adT);
+    const cerebro=parseCerebro(cbT);
+    const tb=parseTitleBullets(tbB);
+    set({step:1});
+    const keywords=extractKeywords(cerebro,S.asin);
+    const listing=findByAsin(tb,S.asin);
+    const curTitle=String(listing?.['Title']||'').trim();
+    const curBullets=[1,2,3,4,5].map(n=>String(listing?.[`Bullet ${n}`]||'').trim());
+    const metrics=(asinSpec&&asinSpec['ASIN']?.toUpperCase()===S.asin.toUpperCase())?asinSpec:findByAsin(allP,S.asin);
+    set({step:2});
+    const aiResult=await callClaude({brand:S.brand,asin:S.asin.toUpperCase(),keywords,curTitle,curBullets,metrics,apiKey:S.apiKey});
+    set({phase:'done',report:{keywords,curTitle,curBullets,metrics,aiResult}});
+  }catch(e){set({phase:'error',errMsg:e.message});}
+}
+
+function ready(){return S.brand.trim()&&S.asin.trim().length>=10&&S.apiKey.trim().length>20&&S.files.allProducts&&S.files.asinData&&S.files.cerebro&&S.files.titleBullets;}
+function copy(t,btn){navigator.clipboard.writeText(t);const w=btn.textContent;btn.textContent='✓';btn.classList.add('ok');setTimeout(()=>{btn.textContent=w;btn.classList.remove('ok');},1800);}
+function copyAll(){
+  const{aiResult}=S.report;
+  const t=`TITLE:\n${aiResult.title}\n\nBULLET 1:\n${aiResult.bullets[0]}\n\nBULLET 2:\n${aiResult.bullets[1]}\n\nBULLET 3:\n${aiResult.bullets[2]}\n\nBULLET 4:\n${aiResult.bullets[3]}\n\nBULLET 5:\n${aiResult.bullets[4]}`;
+  navigator.clipboard.writeText(t);
+  const b=document.getElementById('ca');
+  if(b){const w=b.textContent;b.textContent='✓ Copied!';setTimeout(()=>b.textContent=w,2000);}
+}
+function fmtM(v){if(!v)return'—';const n=String(v).replace(/[^0-9.]/g,'');return n?'$'+parseFloat(n).toLocaleString():'—';}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function j(s){return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n');}
+window.copy=copy;window.copyAll=copyAll;
+
+function setupFZ(el,key){
+  const inp=el.querySelector('input');
+  el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('on');});
+  el.addEventListener('dragleave',()=>el.classList.remove('on'));
+  el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('on');sf(key,e.dataTransfer.files[0]);});
+  el.addEventListener('click',e=>{if(e.target!==inp)inp.click();});
+  inp.addEventListener('change',e=>sf(key,e.target.files[0]));
+}
+function sf(k,f){if(!f)return;S.files={...S.files,[k]:f};draw();}
+function updateBtn(){const b=document.getElementById('br');if(!b)return;b.disabled=!ready();b.textContent=ready()?'Generate SEO Report →':'Fill in all fields and upload all 4 files to continue';}
+
+function draw(){
+  const root=document.getElementById('root');
+
+  if(S.phase==='processing'){
+    const msgs=['Parsing uploaded files…','Extracting keyword opportunities…','Generating SEO listing with Gemini…'];
+    root.innerHTML=`<div class="spg"><div class="sp"></div><div style="font-size:15px;font-weight:500">${msgs[S.step]}</div><div style="font-size:13px;color:var(--muted)">This takes 15–30 seconds</div><div class="dots">${[0,1,2].map(i=>`<div class="dot${i<=S.step?' on':''}"></div>`).join('')}</div></div>`;
+    return;
+  }
+
+  if(S.phase==='input'||S.phase==='error'){
+    const fn=k=>S.files[k]?.name;
+    root.innerHTML=`<div class="pgsm">
+      <div style="margin-bottom:34px">
+        <div class="row" style="margin-bottom:8px"><div class="logo">A</div><h1>Amazon SEO Audit Tool</h1></div>
+        <p style="font-size:13px;color:var(--muted)">Upload your Jungle Scout + Helium 10 exports and get an AI-powered listing optimization report in under 30 seconds.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="card">
+          <div class="sh"><div class="sn">1</div><div class="sl">Brand &amp; ASIN</div></div>
+          <div class="sb"><div class="g2">
+            <div class="fld"><label class="lbl">Brand name</label><input id="ib" class="inp" placeholder="e.g. OakTen" value="${esc(S.brand)}"/></div>
+            <div class="fld"><label class="lbl">Audit ASIN</label><input id="ia" class="inp mono" placeholder="e.g. B0DD2XC38R" value="${esc(S.asin)}" maxlength="12"/></div>
+          </div></div>
+        </div>
+        <div class="card">
+          <div class="sh"><div class="sn">2</div><div class="sl">Upload files</div></div>
+          <div class="sb"><div class="fzg">
+            <div class="fz${fn('allProducts')?' on':''}" data-key="allProducts"><input type="file" accept=".csv" style="display:none"/><div class="fzic">${fn('allProducts')?'✓':'📦'}</div><div style="min-width:0"><div class="fznm">JS — All Products</div><div class="fzhi">${fn('allProducts')||'Brand-wide CSV export'}</div></div></div>
+            <div class="fz${fn('asinData')?' on':''}" data-key="asinData"><input type="file" accept=".csv" style="display:none"/><div class="fzic">${fn('asinData')?'✓':'🔍'}</div><div style="min-width:0"><div class="fznm">JS — ASIN Data</div><div class="fzhi">${fn('asinData')||'ASIN-specific CSV export'}</div></div></div>
+            <div class="fz${fn('cerebro')?' on':''}" data-key="cerebro"><input type="file" accept=".csv" style="display:none"/><div class="fzic">${fn('cerebro')?'✓':'🧠'}</div><div style="min-width:0"><div class="fznm">Helium 10 Cerebro</div><div class="fzhi">${fn('cerebro')||'Keyword research CSV'}</div></div></div>
+            <div class="fz${fn('titleBullets')?' on':''}" data-key="titleBullets"><input type="file" accept=".xlsx,.xls" style="display:none"/><div class="fzic">${fn('titleBullets')?'✓':'📝'}</div><div style="min-width:0"><div class="fznm">Title &amp; Bullets</div><div class="fzhi">${fn('titleBullets')||'Current listing (.xlsx)'}</div></div></div>
+          </div></div>
+        </div>
+        <div class="card">
+          <div class="sh"><div class="sn">3</div><div class="sl">Gemini API key (Free)</div></div>
+          <div class="sb">
+            <div class="fld"><label class="lbl">API key</label><input id="ik" class="inp mono" type="password" placeholder="AIzaSy..." value="${esc(S.apiKey)}"/></div>
+            <p class="anote">Free, no credit card needed. Get your key at <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a> → Get API Key</p>
+          </div>
+        </div>
+        ${S.phase==='error'?`<div class="err"><p style="color:var(--red);font-size:13px"><strong>Error:</strong> ${esc(S.errMsg)}</p></div>`:''}
+        <button id="br" class="btnr" ${ready()?'':'disabled'}>${ready()?'Generate SEO Report →':'Fill in all fields and upload all 4 files to continue'}</button>
+      </div>
+    </div>`;
+    document.getElementById('ib').oninput=e=>{S.brand=e.target.value;updateBtn();};
+    document.getElementById('ia').oninput=e=>{S.asin=e.target.value.trim().toUpperCase();updateBtn();};
+    document.getElementById('ik').oninput=e=>{S.apiKey=e.target.value.trim();updateBtn();};
+    document.getElementById('br').onclick=()=>{if(ready())run();};
+    document.querySelectorAll('.fz').forEach(el=>setupFZ(el,el.dataset.key));
+    return;
+  }
+
+  const{keywords,curTitle,curBullets,metrics,aiResult}=S.report;
+  const mets=[{l:'Price',v:fmtM(metrics?.['Price'])},{l:'Revenue',v:fmtM(metrics?.['Monthly Revenue']||metrics?.['Net Revenue'])},{l:'Rating',v:metrics?.['Star Rating']?`${metrics['Star Rating']} ★`:'—'},{l:'BSR',v:metrics?.['BSR']?`#${metrics['BSR']}`:'—'}];
+  const kwH=keywords.map((k,i)=>{
+    const pill=!k.rank?`<span class="pl pr">Not ranking</span>`:k.gap>10?`<span class="pl pa">Gap +${k.gap}</span>`:`<span class="pl pgrn">Strong</span>`;
+    const gH=k.gap!=null?`<span style="color:${k.gap>0?'var(--red)':'var(--green)'}; font-weight:600">${k.gap>0?'+':''}${k.gap}</span>`:`<span style="color:var(--hint)">—</span>`;
+    return`<tr style="${i%2?'background:rgba(11,16,28,.5);':''}"><td style="color:#8fa0b4;max-width:240px;overflow:hidden;text-overflow:ellipsis">${esc(k.keyword)}</td><td class="r" style="color:var(--amber);font-weight:600">${k.sv.toLocaleString()}</td><td class="r" style="color:${k.rank?'#6a82a0':'var(--red)'}">${k.rank?`#${k.rank}`:'—'}</td><td class="r" style="color:var(--muted)">${k.comp?`#${k.comp}`:'—'}</td><td class="r">${gH}</td><td class="r">${pill}</td></tr>`;
+  }).join('');
+  const cbH=curBullets.filter(Boolean).map((b,i)=>`<div class="bl blc" style="display:flex;gap:9px"><span class="bn">B${i+1}</span><p class="bt">${esc(b)}</p></div>`).join('')||`<p class="empty">No bullets found for this ASIN.</p>`;
+  const abH=(aiResult.bullets||[]).map((b,i)=>`<div class="bl bla"><div class="rowsb" style="margin-bottom:5px"><span class="bn bna">B${i+1}</span><button class="btncp" onclick="copy('${j(b)}',this)">copy</button></div><p class="bta">${esc(b)}</p></div>`).join('');
+  const aTL=aiResult.title?.length||0,cTL=curTitle?.length||0;
+
+  root.innerHTML=`<div class="pg">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px">
+      <div>
+        <div class="row" style="margin-bottom:6px"><div class="logo">A</div><h1>${esc(S.brand)} — SEO Audit Report</h1></div>
+        <span class="pl pm" style="font-family:monospace;font-size:11px">${S.asin.toUpperCase()}</span>
+        ${metrics?.['Product Name']?`<span style="font-size:12px;color:var(--muted);margin-left:10px">${esc(String(metrics['Product Name']).slice(0,60))}…</span>`:''}
+      </div>
+      <button class="btng" id="bbk">← New audit</button>
+    </div>
+
+    ${metrics?`<div class="mr">${mets.map(m=>`<div class="mc"><div class="ml">${m.l}</div><div class="mv">${m.v}</div></div>`).join('')}</div>`:''}
+
+    <div class="card" style="margin-bottom:18px;overflow:hidden">
+      <div class="secb">
+        <h2>Keyword Opportunities</h2>
+        <div class="row" style="gap:8px"><span class="pl pa">${keywords.length} found</span><span class="pl pr">${keywords.filter(k=>!k.rank).length} not ranking</span></div>
+      </div>
+      <div class="tw"><table>
+        <thead><tr><th>Keyword</th><th class="r">Search Vol.</th><th class="r">Your Rank</th><th class="r">Comp. Avg</th><th class="r">Gap</th><th class="r">Status</th></tr></thead>
+        <tbody>${kwH}</tbody>
+      </table></div>
+    </div>
+
+    <div class="pnls">
+      <div class="pnl">
+        <div class="row" style="margin-bottom:16px"><h2 style="color:var(--muted)">Current Listing</h2></div>
+        <div style="margin-bottom:14px">
+          <div class="rowsb" style="margin-bottom:8px"><span class="sub3">Title</span><div class="row" style="gap:6px"><span class="${cTL>200?'cov':'cok'}">${cTL}/200</span>${curTitle?`<button class="btncp" onclick="copy('${j(curTitle)}',this)">copy</button>`:''}</div></div>
+          <div class="lb">${curTitle?esc(curTitle):'<span style="color:var(--hint);font-style:italic">Not found in sheet</span>'}</div>
+        </div>
+        <span class="sub3" style="display:block;margin-bottom:10px">Bullets</span>${cbH}
+      </div>
+      <div class="pnl pnla">
+        <div class="rowsb" style="margin-bottom:16px"><div class="row" style="gap:8px"><h2 style="color:var(--amber)">AI-Optimized Draft</h2><span class="pl pgrn">Gemini</span></div></div>
+        ${aiResult.reasoning?`<div class="strat"><div class="stl">Strategy</div><p class="stt">${esc(aiResult.reasoning)}</p></div>`:''}
+        <div style="margin-bottom:14px">
+          <div class="rowsb" style="margin-bottom:8px"><span class="sub3">Title</span><div class="row" style="gap:6px"><span class="${aTL>200?'cov':'cok'}">${aTL}/200</span><button class="btncp" onclick="copy('${j(aiResult.title||'')}',this)">copy</button></div></div>
+          <div class="lba">${esc(aiResult.title||'')}</div>
+        </div>
+        <span class="sub3" style="display:block;margin-bottom:10px">Bullets</span>${abH}
+      </div>
+    </div>
+
+    <div class="bbar">
+      <p style="font-size:13px;color:var(--muted)">Copy the complete optimized listing to clipboard</p>
+      <button id="ca" class="btnca" onclick="copyAll()">Copy full listing ↗</button>
+    </div>
+  </div>`;
+
+  document.getElementById('bbk').onclick=()=>set({phase:'input',report:null,errMsg:''});
+}
+
+draw();
+</script>
+</body>
+</html>
